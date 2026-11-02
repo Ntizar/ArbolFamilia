@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es" data-nz-theme="light" data-nz-marca="monocromo">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ÁrbolFamilia — crea tu árbol genealógico</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<!-- Aurora v10.10.0 (PASO 0 resuelto del repo) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.10.0/tokens.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.10.0/packs/p1-layout.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.10.0/packs/p2-navigation.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.10.0/packs/p3-typography.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.10.0/packs/p4-actions.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.10.0/packs/p5-forms.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.10.0/packs/p6-feedback.css">
+<!-- Marca monocromo: par atributo+CSS obligatorio -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10/marcas/monocromo.css">
+<!-- Skin pele-Aurora (después de tokens: la cascada gana quien llega último) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/PeleAurora@main/theme-aurora.css">
+<script src="https://cdn.jsdelivr.net/npm/pele@1.6.0/dist/pele.global.js"></script>
+<script src="app.js" defer></script>
+</head>
+<body class="nz">
+
+<header class="nz-navbar">
+  <span class="nz-navbar__brand">ÁrbolFamilia</span>
+  <nav class="nz-navbar__links">
+    <button class="nz-btn nz-btn--soft" id="btn-descargar">Descargar</button>
+    <button class="nz-btn nz-btn--soft" id="btn-cargar">Cargar fichero</button>
+    <button class="nz-btn nz-btn--danger" id="btn-vaciar">Empezar de cero</button>
+  </nav>
+</header>
+<input type="file" id="fichero-cargar" accept=".json,application/json" hidden>
+
+<main class="nz-container--app" style="padding: var(--nz-gutter);">
+  <div class="nz-split nz-split--1-2" style="align-items: start;">
+
+    <!-- Panel de edición -->
+    <section aria-label="Editar familia">
+      <div class="nz-article nz-stack nz-stack--sm">
+        <h2 class="nz-h3" id="titulo-form-persona">Añadir persona</h2>
+        <div class="nz-field">
+          <label class="nz-field__label" for="p-nombre">Nombre</label>
+          <input class="nz-input" id="p-nombre" type="text" placeholder="Ej.: María García">
+        </div>
+        <div class="nz-formgrid">
+          <div class="nz-field">
+            <label class="nz-field__label" for="p-nacimiento">Nacimiento (opcional)</label>
+            <input class="nz-input" id="p-nacimiento" type="text" placeholder="Ej.: 1948">
+          </div>
+          <div class="nz-field">
+            <label class="nz-field__label" for="p-fallecimiento">Fallecimiento (opcional)</label>
+            <input class="nz-input" id="p-fallecimiento" type="text" placeholder="Ej.: 2020">
+          </div>
+        </div>
+        <div class="nz-field">
+          <label class="nz-field__label" for="p-padres">Hijo/a de (opcional)</label>
+          <select class="nz-input" id="p-padres">
+            <option value="">— Nadie, persona raíz —</option>
+          </select>
+          <p class="nz-field__help">Elige una pareja o una persona: el árbol se reordena solo.</p>
+        </div>
+        <div class="nz-cluster">
+          <button class="nz-btn nz-btn--primary" id="btn-guardar-persona">Añadir al árbol</button>
+          <button class="nz-btn nz-btn--ghost" id="btn-cancelar-edicion" hidden>Cancelar</button>
+        </div>
+      </div>
+
+      <div class="nz-article nz-stack nz-stack--sm">
+        <h2 class="nz-h3">Unir en pareja</h2>
+        <div class="nz-formgrid">
+          <div class="nz-field">
+            <label class="nz-field__label" for="u-a">Persona 1</label>
+            <select class="nz-input" id="u-a"></select>
+          </div>
+          <div class="nz-field">
+            <label class="nz-field__label" for="u-b">Persona 2</label>
+            <select class="nz-input" id="u-b"></select>
+          </div>
+        </div>
+        <div class="nz-field">
+          <label class="nz-field__label" for="u-boda">Año de la boda (opcional)</label>
+          <input class="nz-input" id="u-boda" type="text" placeholder="Ej.: 1970">
+        </div>
+        <p class="nz-field__help">Segundas bodas: crea otra unión con la misma persona y la nueva pareja.</p>
+        <button class="nz-btn nz-btn--primary" id="btn-unir">Unir</button>
+        <div id="lista-uniones" class="nz-stack nz-stack--2xs" style="margin-top: var(--nz-space-sm);"></div>
+      </div>
+
+      <div class="nz-article nz-stack nz-stack--sm">
+        <h2 class="nz-h3">Personas</h2>
+        <div id="lista-personas" class="nz-stack nz-stack--2xs"></div>
+      </div>
+    </section>
+
+    <!-- Lienzo del árbol -->
+    <section aria-label="Árbol genealógico">
+      <div class="nz-article">
+        <div class="nz-cluster" style="justify-content: space-between;">
+          <h2 class="nz-h3">El árbol</h2>
+          <span class="nz-lbl" id="aviso-guardado">Guardado en este navegador</span>
+        </div>
+        <div id="lienzo" class="lienzo-arbol"></div>
+        <div id="mensaje-error" class="nz-alert nz-alert--danger" hidden></div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer class="nz-footer" style="text-align:center; padding: var(--nz-space-md);">
+  <p class="nz-text--muted">Hecho con ❤️ por David Antizar</p>
+</footer>
+
+</body>
+</html>
